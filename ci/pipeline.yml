@@ -1,0 +1,33 @@
+resources:
+- name: git-assets
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/ab5yacct/charlie
+- name: cloudfoundry
+  type: cf
+  source:
+    api: {{cf-api}}
+    organization: {{cf-organization}}
+	space: {{cf-space}}
+    username: {{cf-username}}
+    password: {{cf-password}}
+jobs:
+- name: unittest
+  plan:
+  - get: git-assets
+    trigger: true
+  - task: mvn-test
+    file: git-assets/ci/tasks/mvn-test.yml
+- name: deploy
+  plan:
+  - get: git-assets
+    trigger: true
+    passed: 
+    - unittest
+  - task: mvn-package
+    file: git-assets/ci/tasks/mvn-package.yml
+  - put: cloudfoundry
+    params:
+    manifest: git-assets/manifest.yml
+    path: ahb-app-output/concourse-demo.jar
